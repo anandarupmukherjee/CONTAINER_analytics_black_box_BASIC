@@ -4,6 +4,29 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from io import BytesIO
 import matplotlib
+import seaborn as sns
+
+
+sns.set(style='whitegrid', rc={"grid.linewidth": 0.9, "xtick.labelsize" : 12, 
+                               "ytick.labelsize" : 12, "font.family":'Times New Roman', "boxplot.boxprops.color": "black"})
+
+
+plt.rcdefaults()
+sns.set(style='whitegrid', rc={"grid.linewidth": 0.9, "xtick.labelsize" : 12, 
+                               "ytick.labelsize" : 12, "font.family":'Times New Roman', "boxplot.boxprops.color": "black"})
+
+
+font1 = {'family': 'Times New Roman',
+         'weight': 'bold',
+         'size': 16}
+
+font2 = {'family': 'Times New Roman',
+         'weight': 'bold',
+         'size': 14}
+
+font3 = {'family': 'Times New Roman',
+         'weight': 'bold',
+         'size': 12}
 
 matplotlib.use('agg')
 
@@ -17,12 +40,14 @@ class WebApp(object):
         <title>Analytics Service</title>
         </head>
         <body>
-        <h1>Energy Insights (Half-hourly data)</h1>
+        <center>
+        <h1>Energy Insights (Half-hourly data) - Experimental</h1>
         <form method="post" enctype="multipart/form-data" action="/upload">
         <input type="file" name="myFile" />
         <br><br>
         <input type="submit" />
         </form>
+        </center>
         </body>
         </html>
         '''
@@ -40,40 +65,82 @@ class WebApp(object):
 
         # Load the XLS data into a pandas DataFrame
         df = pd.read_excel(BytesIO(xls_data))
-        df_new=df.iloc[:,4:52].T
-        # axes = df_new.iloc[1:40,1:6].plot.bar(rot=0, subplots=True)
-        # axes[1].legend(loc=2) 
+        heads=list(df)
 
-        # Generate a plot of the data
-        # plt.plot(df_new.iloc[:,:12])
-        # plt.plot(df['x'], df['y'])
-        # plt.xlabel('x')
-        # plt.ylabel('y')
-        plt.figure(figsize=(18,200))
-        axes = df_new.iloc[:,:50].plot.kde(subplots=True)
-        axes[1].legend(loc=2)
-        y_axis=axes[1].axes.get_yaxis()
-        y_axis.set_visible(False)
-        plt.savefig("results/in1.png",dpi=200)
+        #plot Daily Consumption
+        plt.figure()
+        df[heads[3]].plot.bar(alpha=0.7,facecolor='r',edgecolor='k', title=heads[3],
+                            xlabel='Days', ylabel='Energy (Wh)')
+        plt.savefig('results/im1.png',dpi=200,bbox_inches = 'tight')
 
-        plt.figure(figsize=(18,200))
-        axes = df_new.iloc[:,:50].plot.bar(rot=0, subplots=True)
-        axes[1].legend(loc=2) 
-        plt.savefig("results/in2.png",dpi=200)
-        # plt.show()
+        # df[heads[3]].plot.hist(alpha=0.7,facecolor='r',edgecolor='k', title=heads[3],
+        #                       xlabel='Days', ylabel='Energy (Wh)', bins=30)
 
-        # Write the plot to a PNG image buffer
-        # img_buffer = BytesIO()
-        # plt.savefig(img_buffer, format='png')
-        # img_buffer.seek(0)
+
+
+        #plot Maximun demand
+        plt.figure()
+        df[heads[2]].plot.bar(alpha=0.7,facecolor='b',edgecolor='k', title=heads[2],
+                            xlabel='Days', ylabel='Energy (kWh)')
+        plt.savefig('results/im2.png',dpi=200,bbox_inches = 'tight')
+
+
+        # df[heads[2]].plot.hist(alpha=0.7,facecolor='b',edgecolor='k', title=heads[2],
+        #                       xlabel='Days', ylabel='Energy (kWh)', bins=30)
+
+
+        #select on the time-energy data values
+        df_new=df.iloc[:,4:52].copy()
+        vmin=df[heads[2]].min()
+        vmax=df[heads[2]].max()
+
+        plt.figure()
+        ax=sns.heatmap(df_new,cmap='RdYlGn_r', linewidths=0.5, annot=False,
+                    robust=True, vmin=vmin ,vmax=vmax)
+        ax.set(xlabel="Time", ylabel="Days", title="Monthly usage profile")
+        plt.savefig('results/im3.png',dpi=200,bbox_inches = 'tight')
+
+
+
+        # daily demand profile
+        plt.figure()
+        for i in range(0,len(df_new)):
+            df_new.iloc[i,:].plot(rot='vertical', xlabel='Time', ylabel='Demand (kWh)',
+                                title='Daily demand profile')
+        plt.savefig('results/im4.png',dpi=200,bbox_inches = 'tight')
+
+
+
+
+        plt.figure(figsize=([32,12]))
+        ax=sns.boxenplot(df_new, scale='linear')
+        ax.set_ylabel('Energy consumption (kWh)', **font1)
+        ax.set_xlabel('Time', **font1)
+        ax.set_title("Monthly half-hourly consumption profile", **font1)
+        ax.tick_params(axis='x', rotation=70)
+        plt.savefig('results/im5.png',dpi=200,bbox_inches = 'tight')
 
         # Generate HTML for the plot and file upload form
         html = f'''
         <html>
         <body>
-        <h1>Result Plot</h1>
-        <img src="results/in2.png" width="720" border="0">
-        <img src="results/in1.png" width="720" border="0">
+        <h1>Analysis</h1>
+        <h3>A. Consumption Patterns</h3>
+        <p>By analyzing half-hourly energy data, you can identify patterns in energy consumption 
+        throughout the day, week, or month. For example, you may see that energy consumption is 
+        highest during peak hours, or that energy usage varies based on weather conditions.</p>
+        <img src="results/im1.png" width="480" border="0">
+        <img src="results/im2.png" width="480" border="0">
+        <br><br>
+
+        <h3>B. Load Profile</h3>
+        <p>Load profiling is the process of identifying the typical load or energy consumption pattern 
+        of a building or group of buildings. By analyzing half-hourly energy data, you can create load 
+        profiles that show how energy consumption varies over time, which can help you identify opportunities 
+        for energy savings or efficiency improvements.</p>
+        <img src="results/im3.png" width="480" border="0">
+        <img src="results/im4.png" width="480" border="0">
+        <img src="results/im5.png" width="1020" border="0">
         <br><br>
         <h1>Upload Another XLS File</h1>
         <form method="post" enctype="multipart/form-data" action="/upload">
