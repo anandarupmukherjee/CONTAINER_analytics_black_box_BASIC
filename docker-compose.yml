@@ -1,0 +1,25 @@
+version: "3"
+
+services:
+   analytics_service:
+      image: server:v1
+      build: .
+      privileged: True
+      ports: 
+         - "8080:8080"
+      container_name: analytics_service
+      restart: always
+      volumes:
+         - ./results:/results
+      networks:
+         dial:
+            ipv4_address: 172.18.0.11
+
+
+
+networks:
+     dial:
+        ipam:
+          config:
+             - subnet: 172.18.0.0/16
+

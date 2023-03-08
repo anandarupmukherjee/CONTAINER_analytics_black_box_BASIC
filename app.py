@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from io import BytesIO
 import matplotlib
 import seaborn as sns
+from scipy.stats import ks_2samp
+
 
 
 sns.set(style='whitegrid', rc={"grid.linewidth": 0.9, "xtick.labelsize" : 12, 
@@ -16,15 +18,15 @@ sns.set(style='whitegrid', rc={"grid.linewidth": 0.9, "xtick.labelsize" : 12,
                                "ytick.labelsize" : 12, "font.family":'Times New Roman', "boxplot.boxprops.color": "black"})
 
 
-font1 = {'family': 'Times New Roman',
+font1 = {'family': 'Calibri',
+         'weight': 'bold',
+         'size': 20}
+
+font2 = {'family': 'Calibri',
          'weight': 'bold',
          'size': 16}
 
-font2 = {'family': 'Times New Roman',
-         'weight': 'bold',
-         'size': 14}
-
-font3 = {'family': 'Times New Roman',
+font3 = {'family': 'Calibri',
          'weight': 'bold',
          'size': 12}
 
@@ -111,14 +113,47 @@ class WebApp(object):
 
 
 
-
         plt.figure(figsize=([32,12]))
-        ax=sns.boxenplot(df_new, scale='linear')
-        ax.set_ylabel('Energy consumption (kWh)', **font1)
-        ax.set_xlabel('Time', **font1)
+        ax=sns.boxenplot(data=df_new)
+        ax.set_ylabel('Energy consumption (kWh)', **font2)
+        ax.set_xlabel('Time', **font2)
         ax.set_title("Monthly half-hourly consumption profile", **font1)
         ax.tick_params(axis='x', rotation=70)
         plt.savefig('results/im5.png',dpi=200,bbox_inches = 'tight')
+
+
+
+        # Read the dataframe from a CSV file
+        # df = pd.read_csv('dataframe.csv', header=None)
+        dist_df = pd.DataFrame(columns=df_new.columns)
+        dist=[]
+        pval=[]
+        # Calculate the distance between distributions of each column
+        for col in df_new.columns:
+            d, p = ks_2samp(df_new[col], df_new.mean())
+            # print(f"Column {col}: Distance = {d:.4f}, p-value = {p:.4f}")
+            dist.append(d)
+            pval.append(p)
+
+
+        pval=pd.DataFrame(pval)
+
+        if pval.max()[0]<0.05:
+            print("Probably Anomalous")
+            s="Probably Anomalous"
+        else:
+            print("Most likely normal")
+            s="Most likely normal"
+
+
+        plt.figure()
+        pval.plot.kde()
+        plt.text(pval.max(),60,s,bbox=dict(facecolor='cyan', alpha=0.5))
+        # plt.text(0.05,65,"Cutoff limit (anomalous if < 0.05)",bbox=dict(facecolor='red', alpha=0.5))
+        # plt.stem(0.05,60,'r')
+        plt.xlim([-0.02,0.08])
+        plt.savefig('results/im6.png', dpi=200, bbox_inches = 'tight')
+        plt.show()
 
         # Generate HTML for the plot and file upload form
         html = f'''
@@ -142,6 +177,8 @@ class WebApp(object):
         <img src="results/im4.png" width="480" border="0">
         <img src="results/im5.png" width="1020" border="0">
         <br><br>
+        <h3>C. Anomaly Detection</h3>
+        <img src="results/im6.png" width="480" border="0">
         <h1>Upload Another XLS File</h1>
         <form method="post" enctype="multipart/form-data" action="/upload">
         <input type="file" name="myFile" />

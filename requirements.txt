@@ -1,0 +1,7 @@
+ cherrypy
+ pandas
+ matplotlib
+ seaborn
+ Python-IO
+ scipy
+ xlrd
