@@ -66,7 +66,9 @@ class WebApp(object):
         xls_data = myFile.file.read()
 
         # Load the XLS data into a pandas DataFrame
-        df = pd.read_excel(BytesIO(xls_data))
+        xls = pd.ExcelFile(BytesIO(xls_data))
+        df = pd.read_excel(xls,'Data')
+#        df = pd.read_excel(BytesIO(xls_data))
         heads=list(df)
 
         #plot Daily Consumption
